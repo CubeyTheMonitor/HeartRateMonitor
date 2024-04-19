@@ -26,9 +26,12 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
 import me.ecogaming.heartratemonitor.R
+import me.ecogaming.heartratemonitor.database.HeartRateHistory
+import me.ecogaming.heartratemonitor.database.HeartRateHistoryEntry
 import me.ecogaming.heartratemonitor.databinding.FragmentHomeBinding
-
+import java.util.Date
 
 class HomeFragment : Fragment(), SensorEventListener {
 
@@ -41,6 +44,11 @@ class HomeFragment : Fragment(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var heartRateSensor: Sensor? = null
     private var measure = false
+    private val values = ArrayList<Int>()
+    private var average = 0
+    private lateinit var date: Date
+
+    private lateinit var heartRateHistory: HeartRateHistory
 
     private val heartRateRequestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -59,6 +67,8 @@ class HomeFragment : Fragment(), SensorEventListener {
 
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+
+        heartRateHistory = HeartRateHistory(requireContext())
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
@@ -110,27 +120,39 @@ class HomeFragment : Fragment(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
             val heartRate = event.values[0]
-            binding.textHeartRate.text = getString(R.string.text_heart_rate, heartRate.toInt().toString())
+            val heartRateInt = heartRate.toInt()
+            binding.textHeartRate.text = getString(R.string.text_heart_rate, heartRateInt.toString())
+            if (heartRate > 0) {
+                if (average == 0) {
+                    date = Date()
+                }
+                values.add(heartRateInt)
+                val sum = values.sum()
+                average = sum / values.size
+            }
+            binding.textHeartRateAverage.text = getString(R.string.text_heart_rate_average, average.toString())
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        if (sensor?.type == Sensor.TYPE_HEART_RATE) {
-            binding.textHeartRateAccuracy.text = getString(R.string.text_heart_rate_accuracy, accuracy.toString())
-        }
+        return
     }
 
     override fun onPause() {
         super.onPause()
-        stopMeasuringHeartRate()
-        measure = false
+        if (measure) {
+            stopMeasuringHeartRate()
+            measure = false
+        }
     }
 
     private fun measureHeartRate() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BODY_SENSORS) == PackageManager.PERMISSION_GRANTED) {
+            values.clear()
+            average = 0
             sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL)
             binding.textHeartRate.text = getString(R.string.text_heart_rate, "0")
-            binding.textHeartRateAccuracy.text = getString(R.string.text_heart_rate_accuracy, "0")
+            binding.textHeartRateAverage.text = getString(R.string.text_heart_rate_average, "0")
             binding.buttonMeasureHeartRate.text = getString(R.string.button_measure_heart_rate_stop)
         } else {
             if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.BODY_SENSORS)) {
@@ -145,8 +167,14 @@ class HomeFragment : Fragment(), SensorEventListener {
     private fun stopMeasuringHeartRate() {
         sensorManager.unregisterListener(this)
         binding.textHeartRate.text = getString(R.string.text_heart_rate_idle)
-        binding.textHeartRateAccuracy.text = ""
+        binding.textHeartRateAverage.text = ""
         binding.buttonMeasureHeartRate.text = getString(R.string.button_measure_heart_rate)
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        if (sharedPreferences.getBoolean("pref_save_history", true) && average > 0) {
+            val entry = HeartRateHistoryEntry(date, average)
+            heartRateHistory.pushValue(entry)
+        }
     }
 
     private fun showBodySensorRationale(context: Context) {

@@ -67,12 +67,12 @@ class HistoryFragment : Fragment() {
             if (entries.size > 0) {
                 val entriesString = entries.joinToString("\n") { it.toString() }
                 val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
-                builder.setTitle("recent measurements")
+                builder.setTitle(R.string.alert_dialog_recent_measurements)
                     .setMessage(entriesString)
-                    .setNegativeButton("Close", null)
+                    .setNegativeButton(R.string.alert_dialog_close, null)
                     .show()
             } else {
-                Toast.makeText(requireContext(), "No entries yet!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.history_no_entries, Toast.LENGTH_SHORT).show()
             }
         }
     }

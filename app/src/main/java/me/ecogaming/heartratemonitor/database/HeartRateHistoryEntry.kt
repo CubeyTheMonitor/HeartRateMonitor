@@ -20,4 +20,11 @@ class HeartRateHistoryEntry(val dateTime: Date, val heartRateValue: Int) {
         val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         return format.format(dateTime)
     }
+
+    @SuppressLint("SimpleDateFormat")
+    override fun toString(): String {
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm")
+        val formattedDate = dateFormat.format(dateTime)
+        return "$formattedDate - $heartRateValue bpm"
+    }
 }

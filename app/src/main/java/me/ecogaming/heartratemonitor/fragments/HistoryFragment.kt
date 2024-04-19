@@ -8,6 +8,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -63,8 +64,16 @@ class HistoryFragment : Fragment() {
 
         binding.buttonShowLastEntry.setOnClickListener {
             val entries = heartRateHistory.queryList()
-            if (entries.size < 1) return@setOnClickListener
-            // TODO: show most recent entry somehow (maybe with a delete button?)
+            if (entries.size > 0) {
+                val entriesString = entries.joinToString("\n") { it.toString() }
+                val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
+                builder.setTitle("recent measurements")
+                    .setMessage(entriesString)
+                    .setNegativeButton("Close", null)
+                    .show()
+            } else {
+                Toast.makeText(requireContext(), "No entries yet!", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

@@ -25,7 +25,7 @@
         app:title="@string/settings_history">
 
         <SwitchPreferenceCompat
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:key="pref_save_history"
             app:title="@string/save_history" />
 
